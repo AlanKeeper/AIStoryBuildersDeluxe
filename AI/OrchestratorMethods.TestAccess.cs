@@ -20,7 +20,7 @@ namespace AIStoryBuilders.AI
 
             LogService.WriteToLog($"TestAccess using {GPTModel} - Start");
 
-            IChatClient api = CreateOpenAIClient();
+            IChatClient api = CreateOpenAIChatClient();
 
             // Update System Message
             SystemMessage = "Please return the following as json: \"This is successful\" in this format {\r\n  'message': message\r\n}";

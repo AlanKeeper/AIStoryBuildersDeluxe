@@ -13,6 +13,7 @@ using OpenAI.FineTuning;
 using OpenAI.Models;
 using System.ClientModel;
 using System.Collections.Generic;
+using System.Net.Http.Json;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 
@@ -38,122 +39,167 @@ namespace AIStoryBuilders.AI
             DatabaseService = _DatabaseService;
         }
 
-        // Memory and Vectors
+		// Memory and Vectors
 
-        #region public async Task<string> GetVectorEmbedding(string EmbeddingContent, bool Combine)
-        public async Task<string> GetVectorEmbedding(string EmbeddingContent, bool Combine)
+		#region public async Task<string> GetVectorEmbedding(string EmbeddingContent, bool Combine)
+		public async Task<string> GetVectorEmbedding(string EmbeddingContent, bool Combine)
+		{
+			float[] embeddingVectors = SettingsService.AIType switch
+			{
+				"OpenAI" => await GetOpenAIEmbeddingAsync(EmbeddingContent),
+				"Azure OpenAI" => await GetAzureOpenAIEmbeddingAsync(EmbeddingContent),
+				"LM Studio" => await GetLmStudioEmbeddingAsync(EmbeddingContent),
+                "Ollama" => await GetOllamaEmbeddingAsync(EmbeddingContent),
+				_ => throw new NotSupportedException($"AIType '{SettingsService.AIType}' is not supported for embeddings.")
+			};
+
+			var VectorsToSave = "[" + string.Join(",", embeddingVectors) + "]";
+			return Combine ? EmbeddingContent + "|" + VectorsToSave : VectorsToSave;
+		}
+
+		private async Task<float[]> GetOpenAIEmbeddingAsync(string content)
+		{
+			var openAIClient = new OpenAIClient(SettingsService.ApiKey);
+			var generator = openAIClient.AsEmbeddingGenerator("text-embedding-ada-002");
+			var embeddings = await generator.GenerateAsync(new[] { content });
+			return embeddings[0].Vector.ToArray();
+		}
+
+		private async Task<float[]> GetAzureOpenAIEmbeddingAsync(string content)
+		{
+			var azureClient = new AzureOpenAIClient(new Uri(SettingsService.Endpoint), new AzureKeyCredential(SettingsService.ApiKey));
+			var generator = azureClient.AsEmbeddingGenerator(SettingsService.AIEmbeddingModel);
+			var embeddings = await generator.GenerateAsync(new[] { content });
+			return embeddings[0].Vector.ToArray();
+		}
+
+		private async Task<float[]> GetLmStudioEmbeddingAsync(string content)
+		{
+			string baseEndpoint = SettingsService.Endpoint.TrimEnd('/');
+			string embeddingsEndpoint = baseEndpoint.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)
+				? $"{baseEndpoint}/embeddings"
+				: $"{baseEndpoint}/v1/embeddings";
+
+			using var httpClient = new HttpClient();
+			var requestBody = new
+			{
+				input = content,
+				model = SettingsService.AIEmbeddingModel
+			};
+
+			var response = await httpClient.PostAsJsonAsync(embeddingsEndpoint, requestBody);
+			response.EnsureSuccessStatusCode();
+
+			var json = await response.Content.ReadAsStringAsync();
+			var obj = System.Text.Json.JsonDocument.Parse(json);
+			return obj.RootElement
+				.GetProperty("data")[0]
+				.GetProperty("embedding")
+				.EnumerateArray()
+				.Select(x => x.GetSingle())
+				.ToArray();
+		}
+
+		private async Task<float[]> GetOllamaEmbeddingAsync(string content)
+		{
+			string endpoint = SettingsService.Endpoint.TrimEnd('/');
+			string embeddingsEndpoint = $"{endpoint}/api/embeddings";
+
+			using var httpClient = new HttpClient();
+			var requestBody = new
+			{
+				model = SettingsService.AIEmbeddingModel,
+				prompt = content
+			};
+
+			var response = await httpClient.PostAsJsonAsync(embeddingsEndpoint, requestBody);
+			response.EnsureSuccessStatusCode();
+
+			var json = await response.Content.ReadAsStringAsync();
+			var obj = System.Text.Json.JsonDocument.Parse(json);
+			return obj.RootElement
+				.GetProperty("embedding")
+				.EnumerateArray()
+				.Select(x => x.GetSingle())
+				.ToArray();
+		}
+		#endregion
+
+		#region public async Task<string> GetVectorEmbeddingAsFloats(string EmbeddingContent)
+		public async Task<float[]> GetVectorEmbeddingAsFloats(string EmbeddingContent)
+		{
+			return SettingsService.AIType switch
+			{
+				"OpenAI" => await GetOpenAIEmbeddingAsync(EmbeddingContent),
+				"Azure OpenAI" => await GetAzureOpenAIEmbeddingAsync(EmbeddingContent),
+				"LM Studio" => await GetLmStudioEmbeddingAsync(EmbeddingContent),
+				"Ollama" => await GetOllamaEmbeddingAsync(EmbeddingContent),
+				_ => throw new NotSupportedException($"AIType '{SettingsService.AIType}' is not supported for embeddings.")
+			};
+		}
+		#endregion
+
+		// Utility Methods
+
+		public IChatClient CreateOpenAIChatClient()
         {
-            IEmbeddingGenerator<string, Embedding<float>> generator;
-
-            // Determine the service type
-            OpenAIServiceType serviceType = SettingsService.AIType == "OpenAI" ? OpenAIServiceType.OpenAI : OpenAIServiceType.AzureOpenAI;
-
-            if (serviceType == OpenAIServiceType.OpenAI)
-            {
-                // Using OpenAI
-                var openAIClient = new OpenAIClient(SettingsService.ApiKey);
-                generator = openAIClient.AsEmbeddingGenerator("text-embedding-ada-002");
-            }
-            else // OpenAIServiceType.AzureOpenAI
-            {
-                // Using Azure OpenAI
-                var azureClient = new AzureOpenAIClient(new Uri(SettingsService.Endpoint), new AzureKeyCredential(SettingsService.ApiKey));
-                generator = azureClient.AsEmbeddingGenerator(SettingsService.AIEmbeddingModel);
-            }
-
-            var embeddings = await generator.GenerateAsync(new[] { EmbeddingContent });
-
-            // Get embeddings as an array of floats
-            var embeddingVectors = embeddings[0].Vector.ToArray();
-
-            // Convert the floats to a single string
-            var VectorsToSave = "[" + string.Join(",", embeddingVectors) + "]";
-
-            if (Combine)
-            {
-                return EmbeddingContent + "|" + VectorsToSave;
-            }
-            else
-            {
-                return VectorsToSave;
-            }
+            return CreateAIChatClient(SettingsService.AIType, SettingsService.AIModel, SettingsService.ApiKey, SettingsService.Endpoint, SettingsService.AIEmbeddingModel);
         }
-        #endregion
 
-        #region public async Task<string> GetVectorEmbeddingAsFloats(string EmbeddingContent)
-        public async Task<float[]> GetVectorEmbeddingAsFloats(string EmbeddingContent)
+        public IChatClient CreateOpenAIClient(string GPTModel)
         {
-            IEmbeddingGenerator<string, Embedding<float>> generator;
-
-            // Determine the service type
-            OpenAIServiceType serviceType = SettingsService.AIType == "OpenAI" ? OpenAIServiceType.OpenAI : OpenAIServiceType.AzureOpenAI;
-
-            if (serviceType == OpenAIServiceType.OpenAI)
-            {
-                // Using OpenAI
-                var openAIClient = new OpenAIClient(SettingsService.ApiKey);
-                generator = openAIClient.AsEmbeddingGenerator("text-embedding-ada-002");
-            }
-            else // OpenAIServiceType.AzureOpenAI
-            {
-                // Using Azure OpenAI
-                var azureClient = new AzureOpenAIClient(new Uri(SettingsService.Endpoint), new AzureKeyCredential(SettingsService.ApiKey));
-                generator = azureClient.AsEmbeddingGenerator(SettingsService.AIEmbeddingModel);
-            }
-
-            var embeddings = await generator.GenerateAsync(new[] { EmbeddingContent });
-
-            // Get embeddings as an array of floats
-            var embeddingVectors = embeddings[0].Vector.ToArray();          
-
-            return embeddingVectors;
-        }
-        #endregion
-
-        // Utility Methods
-
-        public IChatClient CreateOpenAIClient()
-        {
-            return CreateOpenAIClient(SettingsService.AIModel);
+            return CreateAIChatClient(SettingsService.AIType, GPTModel, SettingsService.ApiKey, SettingsService.Endpoint, SettingsService.AIEmbeddingModel);
         }
 
-        #region public IChatClient CreateOpenAIClient()
-        public IChatClient CreateOpenAIClient(string paramAIModel)
-        {
-            string Organization = SettingsService.Organization;
-            string ApiKey = SettingsService.ApiKey;
-            string Endpoint = SettingsService.Endpoint;
-            string ApiVersion = SettingsService.ApiVersion;
-            string AIEmbeddingModel = SettingsService.AIEmbeddingModel;
-            string AIModel = paramAIModel;
+		#region public IChatClient CreateAIChatClient(string AIType, string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
+		public IChatClient CreateAIChatClient(string AIType, string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
+		{
+			if (AIType == "OpenAI")
+			{
+				ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
 
-            ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
+				OpenAIClientOptions options = new OpenAIClientOptions();
+				options.NetworkTimeout = TimeSpan.FromSeconds(520);
 
-            if (SettingsService.AIType == "OpenAI")
-            {
-                OpenAIClientOptions options = new OpenAIClientOptions();
-                options.OrganizationId = Organization;
-                options.NetworkTimeout = TimeSpan.FromSeconds(520);
+				return new OpenAIClient(
+					apiKeyCredential, options)
+					.AsChatClient(AIModel);
+			}
+			else if (AIType == "Azure OpenAI")
+			{
+				ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
 
-                return new OpenAIClient(
-                    apiKeyCredential, options)
-                    .AsChatClient(AIModel);
-            }
-            else // Azure OpenAI"
-            {
-                AzureOpenAIClientOptions options = new AzureOpenAIClientOptions();
-                options.NetworkTimeout = TimeSpan.FromSeconds(520);
+				AzureOpenAIClientOptions options = new AzureOpenAIClientOptions();
+				options.NetworkTimeout = TimeSpan.FromSeconds(520);
 
-                return new AzureOpenAIClient(
-                    new Uri(Endpoint),
-                    apiKeyCredential, options)
-                    .AsChatClient(AIModel);
-            }
-        }
-        #endregion
+				return new AzureOpenAIClient(
+					new Uri(Endpoint),
+					apiKeyCredential, options)
+					.AsChatClient(AIModel);
+			}
+			else if (AIType == "LM Studio")
+			{
+				var options = new OpenAIClientOptions
+				{
+					Endpoint = new Uri(Endpoint),
+					NetworkTimeout = TimeSpan.FromSeconds(520)
+				};
+				// LM Studio doesn’t validate the key, so any non-empty string will work
+				var credential = new ApiKeyCredential("dummy-api-key");
+				return new OpenAIClient(credential, options)
+					.AsChatClient(AIModel);
+			}
+			else // Ollama
+			{
+				return new OllamaChatClient(
+					new Uri(Endpoint),
+					AIModel);
+			}
+		}
+		#endregion
 
-        #region public IChatClient CreateEmbeddingOpenAIClient()
-        public IChatClient CreateEmbeddingOpenAIClient()
+		#region public IChatClient CreateEmbeddingOpenAIClient()
+		public IChatClient CreateEmbeddingOpenAIClient()
         {
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;

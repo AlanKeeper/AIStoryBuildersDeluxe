@@ -29,7 +29,7 @@ namespace AIStoryBuilders.AI
             LogService.WriteToLog($"Detect Character Attributes using {GPTModel} - Start");
 
             // Create a new OpenAIClient object
-            IChatClient api = CreateOpenAIClient();
+            IChatClient api = CreateOpenAIChatClient();
 
             // Serialize the Characters to JSON
             var SimpleCharacters = ProcessCharacters(colCharacters);

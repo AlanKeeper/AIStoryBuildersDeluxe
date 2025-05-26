@@ -177,22 +177,8 @@ else // Existing Story
     {
         try
         {
-            if (objStory.Title != null)
-            {
-                if (objStory.Title.Length < 1)
-                {
-                    NotificationService.Notify(
-                        new NotificationMessage
-                            {
-                                Severity = NotificationSeverity.Error,
-                                Summary = "Error",
-                                Detail = "Story Title is required",
-                                Duration = 4000
-                            });
-                    return;
-                }
-            }
-            else
+            // Validate Story Title
+            if (string.IsNullOrWhiteSpace(objStory.Title))
             {
                 NotificationService.Notify(
                     new NotificationMessage

@@ -68,8 +68,14 @@ namespace AIStoryBuilders.Model
             // Convert the JSON to a dynamic object
             dynamic AIStoryBuildersSettingsObject = JsonConvert.DeserializeObject(AIStoryBuildersSettings);
 
-            // Update the dynamic object
-            AIStoryBuildersSettingsObject.OpenAIServiceOptions.Organization = paramOrganization;
+			// Handle "Local" AI type where ApiKey is not required
+			if (paramAIType == "Local")
+			{
+				paramApiKey = null; // Clear the API key for local models
+			}
+
+			// Update the dynamic object
+			AIStoryBuildersSettingsObject.OpenAIServiceOptions.Organization = paramOrganization;
             AIStoryBuildersSettingsObject.OpenAIServiceOptions.ApiKey = paramApiKey;
             AIStoryBuildersSettingsObject.ApplicationSettings.AIModel = paramAIModel;
             AIStoryBuildersSettingsObject.ApplicationSettings.AIType = paramAIType;

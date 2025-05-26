@@ -28,7 +28,7 @@ namespace AIStoryBuilders.AI
             LogService.WriteToLog($"Detect Characters using {GPTModel} - Start");
 
             // Create a new OpenAIClient object
-            IChatClient api = CreateOpenAIClient();
+            IChatClient api = CreateOpenAIChatClient();
 
             // Update System Message
             SystemMessage = CreateWriteParagraph(objJSONMasterStory, paramAIPrompt);

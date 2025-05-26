@@ -25,7 +25,7 @@ namespace AIStoryBuilders.AI
             LogService.WriteToLog($"CreateNewChapters using {GPTModel} - Start");
 
             // Create a new OpenAIClient object
-            IChatClient api = CreateOpenAIClient();
+            IChatClient api = CreateOpenAIChatClient();
            
             // Update System Message
             SystemMessage = CreateSystemMessageCreateNewChapters(JSONNewStory, ChapterCount);

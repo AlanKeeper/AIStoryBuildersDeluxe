@@ -28,7 +28,7 @@ namespace AIStoryBuilders.AI
             LogService.WriteToLog($"ParseNewStory using {GPTModel} - Start");
 
             // Create a new OpenAIClient object
-            IChatClient api = CreateOpenAIClient();
+            IChatClient api = CreateOpenAIChatClient();
 
             // Trim paramStoryText to 10000 words (so we don't run out of tokens)
             paramStoryText = OrchestratorMethods.TrimToMaxWords(paramStoryText, 10000);

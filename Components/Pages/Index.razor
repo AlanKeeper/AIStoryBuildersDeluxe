@@ -17,7 +17,7 @@
 @implements IDisposable
 <PageTitle>AI Story Builders</PageTitle>
 <RadzenMenu>
-    @if (ApiKey.Length > 10)
+     @if (SettingsService.AIType == "Local" || (ApiKey?.Length > 10))
     {
         <RadzenMenuItem Click="OnHomeClicked" Text="Home" Icon="home"></RadzenMenuItem>
         <RadzenMenuItem Click="OnLogsClicked" Text="Logs" Icon="assignment"></RadzenMenuItem>
@@ -105,17 +105,32 @@
             Organization = SettingsService.Organization;
             ApiKey = SettingsService.ApiKey;
 
-            if ((ApiKey == "") || (ApiKey.Length < 10))
+            // Check if the AI type is "Local"
+            if (SettingsService.AIType == "Local")
             {
-                // Switch to the Settings page
-                HomeVisible = false;
-                SettingsVisible = true;
+                // Skip API key validation for Local AI
+                HomeVisible = true;
+                SettingsVisible = false;
                 LogsVisible = false;
+
+                // Call GetStorys for Local AI
+                colStorys = AIStoryBuildersService.GetStorys();
             }
             else
             {
-                // Get the Storys from the database
-                colStorys = AIStoryBuildersService.GetStorys();
+                // Validate the API key for non-Local AI types
+                if ((ApiKey == "") || (ApiKey.Length < 10))
+                {
+                    // Switch to the Settings page
+                    HomeVisible = false;
+                    SettingsVisible = true;
+                    LogsVisible = false;
+                }
+                else
+                {
+                    // Get the Stories from the database
+                    colStorys = AIStoryBuildersService.GetStorys();
+                }
             }
         }
         catch (Exception ex)
@@ -362,6 +377,16 @@
         SettingsService.LoadSettings();
         Organization = SettingsService.Organization;
         ApiKey = SettingsService.ApiKey;
+
+        // If using "Local", skip API key validation
+        if (SettingsService.AIType == "Local")
+        {
+            HomeVisible = true;
+            SettingsVisible = false;
+            UtilityVisible = false;
+            LogsVisible = false;
+            return;
+        }
 
         // If there is a key show the Home page
         if (ApiKey.Length> 10)
