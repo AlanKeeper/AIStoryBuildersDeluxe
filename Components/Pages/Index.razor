@@ -106,7 +106,7 @@
 			ApiKey = SettingsService.ApiKey;
 
 			// Check if the AI type is "Local"
-			if (SettingsService.AIType == "Local")
+			if ((SettingsService.AIType == "LM Studio") || (SettingsService.AIType == "Ollama"))
 			{
 				// Skip API key validation for Local AI
 				HomeVisible = true;
