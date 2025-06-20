@@ -181,7 +181,7 @@ namespace AIStoryBuilders.AI
 			{
 				var options = new OpenAIClientOptions
 				{
-					Endpoint = new Uri(Endpoint),
+					Endpoint = NormalizeOpenAIEndpoint(Endpoint),
 					NetworkTimeout = TimeSpan.FromSeconds(520)
 				};
 				// LM Studio doesn’t validate the key, so any non-empty string will work
@@ -189,11 +189,22 @@ namespace AIStoryBuilders.AI
 				return new OpenAIClient(credential, options)
 					.AsChatClient(AIModel);
 			}
-			else // Ollama
+			else if (AIType == "Ollama")
 			{
-				return new OllamaChatClient(
-					new Uri(Endpoint),
-					AIModel);
+				var options = new OpenAIClientOptions
+				{
+					Endpoint = NormalizeOpenAIEndpoint(Endpoint),
+					NetworkTimeout = TimeSpan.FromSeconds(520)
+				};
+
+				var credential = new ApiKeyCredential("ollama");
+
+				return new OpenAIClient(credential, options)
+					.AsChatClient(AIModel);
+			}
+			else
+			{
+				throw new NotSupportedException($"AIType '{AIType}' is not supported.");
 			}
 		}
 		#endregion
@@ -231,10 +242,23 @@ namespace AIStoryBuilders.AI
                     .AsChatClient(AIEmbeddingModel);
             }
         }
-        #endregion
+		#endregion
 
-        #region public float CosineSimilarity(float[] vector1, float[] vector2)
-        public float CosineSimilarity(float[] vector1, float[] vector2)
+		private static Uri NormalizeOpenAIEndpoint(string endpoint)
+		{
+			if (!endpoint.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
+			{
+				if (endpoint.EndsWith("/"))
+					endpoint += "v1";
+				else
+					endpoint += "/v1";
+			}
+
+			return new Uri(endpoint);
+		}
+
+		#region public float CosineSimilarity(float[] vector1, float[] vector2)
+		public float CosineSimilarity(float[] vector1, float[] vector2)
         {
             // Initialize variables for dot product and
             // magnitudes of the vectors

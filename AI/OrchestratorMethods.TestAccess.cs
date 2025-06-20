@@ -27,7 +27,7 @@ namespace AIStoryBuilders.AI
 
             LogService.WriteToLog($"Prompt: {SystemMessage}");
 
-            ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Calling ChatGPT to test access...", 5));
+            ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Calling AI to test access...", 5));
 
             var ChatResponseResult = await api.CompleteAsync(SystemMessage);
 

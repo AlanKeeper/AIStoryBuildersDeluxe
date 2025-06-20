@@ -31,7 +31,7 @@
             }
             else if (AIType == "Azure OpenAI")
             {
-                <RadzenFormField Text="Azure OpenAI Model Deployment Name:" Variant="@variant">
+                <RadzenFormField Text="Azure OpenAI Model Deployment Name:" Variant="@variant" >
                     <RadzenTextBox @bind-Value="@AzureModel" style="width:450px;" />
                 </RadzenFormField>
                 <RadzenFormField Text="Azure OpenAI Embedding Model Deployment Name:" Variant="@variant">
@@ -80,12 +80,6 @@
                 {
                     <RadzenButton Text="An Azure OpenAI API Key is required (Click here to get one)" ButtonStyle="ButtonStyle.Secondary"
                                   Click="GetAzureAPIKey"
-                                  Style="margin-bottom: 10px; width: 500px" />
-                }
-                else if (AIType == "LM Studio" || AIType == "Ollama")
-                {
-                    <RadzenButton Text="No external key needed" ButtonStyle="ButtonStyle.Secondary"
-                                  Disabled="true"
                                   Style="margin-bottom: 10px; width: 500px" />
                 }
             }
@@ -138,6 +132,9 @@
         SettingsService.LoadSettings();
 
         OrchestratorMethods = (OrchestratorMethods)ScopedServices.GetService(typeof(OrchestratorMethods));
+
+        // Set AIType from settings
+        AIType = SettingsService.AIType ?? "OpenAI";
 
         // Load OpenAI
         OpenAIApiKey = SettingsService.GetApiKey("OpenAI");
