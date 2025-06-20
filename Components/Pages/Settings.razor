@@ -11,216 +11,371 @@
 @inject IJSRuntime JSRuntime
 <h3>Settings</h3>
 <RadzenRow AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap" Gap="1rem" Class="rz-p-sm-12">
-	<RadzenColumn Size="8" SizeSM="4">
-		<RadzenStack>
-			<RadzenFormField Text="OpenAI Service Type:" Variant="@variant">
-				<RadzenDropDown Data=@colAITypes @bind-Value="@AIType" Style="width:300px" Change="@(args => ChangeAIType(args))" />
-			</RadzenFormField>
-			@if (AIType != "LM Studio" && AIType != "Ollama")
-			{
-				<RadzenFormField Text="ApiKey:" Variant="@variant">
-					<RadzenTextBox @bind-Value="@ApiKey" @onkeydown="APIKeyDetection" style="width:450px;" />
-				</RadzenFormField>
-			}
-			@if (AIType == "OpenAI")
-			{
-				<RadzenFormField Text="Default AI Model:" Variant="@variant">
-					<RadzenDropDown Data=@colModels @bind-Value="@AIModel" Style="width:300px" />
-				</RadzenFormField>
-				<RadzenLabel Text="Note: GPT 3.5 is faster and cost less than GPT 4, but does not perform as well." style="font-size:x-small" />
-			}
-			else if (AIType == "Azure OpenAI")
-			{
-				<RadzenFormField Text="Azure OpenAI Model Deployment Name:" Variant="@variant">
-					<RadzenTextBox @bind-Value="@AIModel" style="width:450px;" />
-				</RadzenFormField>
-				<RadzenFormField Text="Azure OpenAI Embedding Model Deployment Name:" Variant="@variant">
-					<RadzenTextBox @bind-Value="@AIEmbeddingModel" style="width:450px;" />
-				</RadzenFormField>
-				<RadzenFormField Text="Azure OpenAI Endpoint:" Variant="@variant">
-					<RadzenTextBox @bind-Value="@Endpoint" style="width:450px;" />
-				</RadzenFormField>
-				<RadzenFormField Text="Azure OpenAI Api Version:" Variant="@variant">
-					<RadzenTextBox @bind-Value="@ApiVersion" style="width:450px;" />
-				</RadzenFormField>
-			}
-			else if (AIType == "LM Studio" || AIType == "Ollama")
-			{
-				<RadzenFormField Text="Endpoint:" Variant="@variant">
-					<RadzenTextBox @bind-Value="@Endpoint" style="width:450px;" />
-				</RadzenFormField>
-				<RadzenFormField Text="Model Name:" Variant="@variant">
-					<RadzenTextBox @bind-Value="@AIModel" style="width:450px;" />
-				</RadzenFormField>
-				<RadzenFormField Text="Embedding Model Name:" Variant="@variant">
-					<RadzenTextBox @bind-Value="@AIEmbeddingModel" style="width:450px;" />
-				</RadzenFormField>
-			}
-			@if (!IsSettingsEntered)
-			{
-				@if (AIType == "OpenAI")
-				{
-					<RadzenButton Text="An OpenAI API Key is required (Click here to get one)" ButtonStyle="ButtonStyle.Secondary"
-								  Click="GetAPIKey"
-								  Style="margin-bottom: 10px; width: 500px" />
-				}
-				else if (AIType == "Azure OpenAI")
-				{
-					<RadzenButton Text="An Azure OpenAI API Key is required (Click here to get one)" ButtonStyle="ButtonStyle.Secondary"
-								  Click="GetAzureAPIKey"
-								  Style="margin-bottom: 10px; width: 500px" />
-				}
-				else if (AIType == "LM Studio" || AIType == "Ollama")
-				{
-					<RadzenButton Text="No external key needed" ButtonStyle="ButtonStyle.Secondary"
-								  Disabled="true"
-								  Style="margin-bottom: 10px; width: 500px" />
-				}
-			}
-			else
-			{
-				<RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="SettingsSave" Style="margin-bottom: 10px; width: 500px" />
-			}
-		</RadzenStack>
-	</RadzenColumn>
+    <RadzenColumn Size="8" SizeSM="4">
+        <RadzenStack>
+            <RadzenFormField Text="OpenAI Service Type:" Variant="@variant">
+                <RadzenDropDown Data=@colAITypes @bind-Value="@AIType" Style="width:300px" Change="@(args => ChangeAIType(args))" />
+            </RadzenFormField>
+            @if (AIType != "LM Studio" && AIType != "Ollama")
+            {
+                <RadzenFormField Text="ApiKey:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@CurrentApiKey" @onkeydown="APIKeyDetection" style="width:450px;" />
+                </RadzenFormField>
+            }
+            @if (AIType == "OpenAI")
+            {
+                <RadzenFormField Text="Default AI Model:" Variant="@variant">
+                    <RadzenDropDown Data=@colModels @bind-Value="@OpenAIModel" Style="width:300px" />
+                </RadzenFormField>
+                <RadzenLabel Text="Note: GPT 3.5 is faster and cost less than GPT 4, but does not perform as well." style="font-size:x-small" />
+            }
+            else if (AIType == "Azure OpenAI")
+            {
+                <RadzenFormField Text="Azure OpenAI Model Deployment Name:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@AzureModel" style="width:450px;" />
+                </RadzenFormField>
+                <RadzenFormField Text="Azure OpenAI Embedding Model Deployment Name:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@AzureEmbeddingModel" style="width:450px;" />
+                </RadzenFormField>
+                <RadzenFormField Text="Azure OpenAI Endpoint:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@AzureEndpoint" style="width:450px;" />
+                </RadzenFormField>
+                <RadzenFormField Text="Azure OpenAI Api Version:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@AzureApiVersion" style="width:450px;" />
+                </RadzenFormField>
+            }
+            else if (AIType == "LM Studio")
+            {
+                <RadzenFormField Text="Endpoint:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@LMStudioEndpoint" style="width:450px;" />
+                </RadzenFormField>
+                <RadzenFormField Text="Model Name:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@LMStudioModel" style="width:450px;" />
+                </RadzenFormField>
+                <RadzenFormField Text="Embedding Model Name:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@LMStudioEmbeddingModel" style="width:450px;" />
+                </RadzenFormField>
+            }
+            else if (AIType == "Ollama")
+            {
+                <RadzenFormField Text="Endpoint:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@OllamaEndpoint" style="width:450px;" />
+                </RadzenFormField>
+                <RadzenFormField Text="Model Name:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@OllamaModel" style="width:450px;" />
+                </RadzenFormField>
+                <RadzenFormField Text="Embedding Model Name:" Variant="@variant">
+                    <RadzenTextBox @bind-Value="@OllamaEmbeddingModel" style="width:450px;" />
+                </RadzenFormField>
+            }
+            @if (!IsSettingsEntered)
+            {
+                @if (AIType == "OpenAI")
+                {
+                    <RadzenButton Text="An OpenAI API Key is required (Click here to get one)" ButtonStyle="ButtonStyle.Secondary"
+                                  Click="GetAPIKey"
+                                  Style="margin-bottom: 10px; width: 500px" />
+                }
+                else if (AIType == "Azure OpenAI")
+                {
+                    <RadzenButton Text="An Azure OpenAI API Key is required (Click here to get one)" ButtonStyle="ButtonStyle.Secondary"
+                                  Click="GetAzureAPIKey"
+                                  Style="margin-bottom: 10px; width: 500px" />
+                }
+                else if (AIType == "LM Studio" || AIType == "Ollama")
+                {
+                    <RadzenButton Text="No external key needed" ButtonStyle="ButtonStyle.Secondary"
+                                  Disabled="true"
+                                  Style="margin-bottom: 10px; width: 500px" />
+                }
+            }
+            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="SettingsSave" Style="margin-bottom: 10px; width: 500px" />
+        </RadzenStack>
+    </RadzenColumn>
 </RadzenRow>
 @code {
-	[Parameter] public EventCallback SettingsChanged { get; set; }
-	OrchestratorMethods OrchestratorMethods;
-	Variant variant = Variant.Outlined;
+    [Parameter] public EventCallback SettingsChanged { get; set; }
+    OrchestratorMethods OrchestratorMethods;
+    Variant variant = Variant.Outlined;
 
-	string DefaultAIModel = "gpt-4o";
+    string DefaultAIModel = "gpt-4o";
+    string AIType = "OpenAI";
 
-	string Organization = "";
-	string ApiKey = "";
-	string AIModel = "";
-	string AIType = "OpenAI";
-	string Endpoint = "";
-	string AIEmbeddingModel = "";
-	string ApiVersion = "";
+    // Specific variables for each AI type
+    string OpenAIApiKey = "";
+    string OpenAIModel = "";
+    string OpenAIEmbeddingModel = "";
+    string OpenAIEndpoint = "";
 
-	List<string> colAITypes = new List<string>()
-				{
-				   "OpenAI","Azure OpenAI", "LM Studio", "Ollama"
-				};
+    string AzureApiKey = "";
+    string AzureModel = "";
+    string AzureEmbeddingModel = "";
+    string AzureEndpoint = "";
+    string AzureApiVersion = "";
 
-	List<string> colModels = new List<string>()
-				{
-				   "gpt-4o","gpt-4.1"
-				};
+    string LMStudioModel = "";
+    string LMStudioEmbeddingModel = "";
+    string LMStudioEndpoint = "";
 
-	bool IsSettingsEntered = false;
+    string OllamaModel = "";
+    string OllamaEmbeddingModel = "";
+    string OllamaEndpoint = "";
 
-	protected override void OnInitialized()
-	{
-		SettingsService.LoadSettings();
+    List<string> colAITypes = new List<string>()
+                {
+                   "OpenAI","Azure OpenAI", "LM Studio", "Ollama"
+                };
 
-		OrchestratorMethods = (OrchestratorMethods)ScopedServices.GetService(typeof(OrchestratorMethods));
+    List<string> colModels = new List<string>()
+                {
+                   "gpt-4o","gpt-4.1"
+                };
 
-		Organization = SettingsService.Organization;
-		ApiKey = SettingsService.ApiKey;
-		AIModel = SettingsService.AIModel;
-		AIType = SettingsService.AIType;
-		Endpoint = SettingsService.Endpoint;
-		ApiVersion = SettingsService.ApiVersion;
-		AIEmbeddingModel = SettingsService.AIEmbeddingModel;
+    bool IsSettingsEntered = false;
 
-		// Determine if settings are entered
-		IsSettingsEntered = (AIType == "Local" && !string.IsNullOrWhiteSpace(AIModel) && !string.IsNullOrWhiteSpace(Endpoint))
-							|| (!string.IsNullOrWhiteSpace(ApiKey) && ApiKey.Length > 1);
-	}
+    protected override void OnInitialized()
+    {
+        SettingsService.LoadSettings();
 
-	private async Task GetAPIKey()
-	{
-		// Open a new window to the OpenAI API Key page
-		await JSRuntime.InvokeVoidAsync("open", "https://platform.openai.com/account/api-keys");
-	}
+        OrchestratorMethods = (OrchestratorMethods)ScopedServices.GetService(typeof(OrchestratorMethods));
 
-	private async Task GetAzureAPIKey()
-	{
-		// Open a new window to the Azure OpenAI API Key page
-		await JSRuntime.InvokeVoidAsync("open", "https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal");
-	}
+        // Load OpenAI
+        OpenAIApiKey = SettingsService.GetApiKey("OpenAI");
+        OpenAIModel = SettingsService.GetAIModel("OpenAI");
+        OpenAIEmbeddingModel = SettingsService.GetAIEmbeddingModel("OpenAI");
+        OpenAIEndpoint = SettingsService.GetEndpoint("OpenAI");
 
-	private void APIKeyDetection(KeyboardEventArgs args)
-	{
-		IsSettingsEntered = true;
-	}
+        // Load Azure OpenAI
+        AzureApiKey = SettingsService.GetApiKey("Azure OpenAI");
+        AzureModel = SettingsService.GetAIModel("Azure OpenAI");
+        AzureEmbeddingModel = SettingsService.GetAIEmbeddingModel("Azure OpenAI");
+        AzureEndpoint = SettingsService.GetEndpoint("Azure OpenAI");
+        AzureApiVersion = SettingsService.GetApiVersion("Azure OpenAI");
 
-	private async Task SettingsSave()
-	{
-		try
-		{
-			// Validate the API key only if using OpenAI
-			if (AIType == "OpenAI" && !ApiKey.StartsWith("sk-"))
-			{
-				NotificationService.Notify(new NotificationMessage
-					{
-						Severity = NotificationSeverity.Error,
-						Summary = "Error",
-						Detail = "Invalid API Key - must start with: sk-",
-						Duration = 4000
-					});
+        // Load LM Studio
+        LMStudioModel = SettingsService.GetAIModel("LM Studio");
+        LMStudioEmbeddingModel = SettingsService.GetAIEmbeddingModel("LM Studio");
+        LMStudioEndpoint = SettingsService.GetEndpoint("LM Studio");
 
-				return;
-			}
+        // Load Ollama
+        OllamaModel = SettingsService.GetAIModel("Ollama");
+        OllamaEmbeddingModel = SettingsService.GetAIEmbeddingModel("Ollama");
+        OllamaEndpoint = SettingsService.GetEndpoint("Ollama");
+    }
 
-			if (AIType == "Local" && (string.IsNullOrWhiteSpace(Endpoint) || string.IsNullOrWhiteSpace(AIModel)))
-			{
-				NotificationService.Notify(new NotificationMessage
-					{
-						Severity = NotificationSeverity.Error,
-						Summary = "Error",
-						Detail = "Endpoint and Model Name are required for Local models.",
-						Duration = 4000
-					});
+    // Helper properties for current AI type
+    string CurrentApiKey
+    {
+        get => AIType switch
+        {
+            "OpenAI" => OpenAIApiKey,
+            "Azure OpenAI" => AzureApiKey,
+            _ => ""
+        };
+        set
+        {
+            switch (AIType)
+            {
+                case "OpenAI": OpenAIApiKey = value; break;
+                case "Azure OpenAI": AzureApiKey = value; break;
+            }
+        }
+    }
 
-				return;
-			}
+    string CurrentModel
+    {
+        get => AIType switch
+        {
+            "OpenAI" => OpenAIModel,
+            "Azure OpenAI" => AzureModel,
+            "LM Studio" => LMStudioModel,
+            "Ollama" => OllamaModel,
+            _ => ""
+        };
+        set
+        {
+            switch (AIType)
+            {
+                case "OpenAI": OpenAIModel = value; break;
+                case "Azure OpenAI": AzureModel = value; break;
+                case "LM Studio": LMStudioModel = value; break;
+                case "Ollama": OllamaModel = value; break;
+            }
+        }
+    }
 
-			// Update Settings
-			await SettingsService.SaveSettings(Organization, ApiKey, AIModel, AIType, Endpoint, ApiVersion, AIEmbeddingModel);
+    string CurrentEmbeddingModel
+    {
+        get => AIType switch
+        {
+            "OpenAI" => OpenAIEmbeddingModel,
+            "Azure OpenAI" => AzureEmbeddingModel,
+            "LM Studio" => LMStudioEmbeddingModel,
+            "Ollama" => OllamaEmbeddingModel,
+            _ => ""
+        };
+        set
+        {
+            switch (AIType)
+            {
+                case "OpenAI": OpenAIEmbeddingModel = value; break;
+                case "Azure OpenAI": AzureEmbeddingModel = value; break;
+                case "LM Studio": LMStudioEmbeddingModel = value; break;
+                case "Ollama": OllamaEmbeddingModel = value; break;
+            }
+        }
+    }
 
-			// Test API Key or Endpoint only if not Local
-			if (AIType != "Local")
-			{
-				var result = await OrchestratorMethods.TestAccess(AIModel);
-			}
+    string CurrentEndpoint
+    {
+        get => AIType switch
+        {
+            "OpenAI" => OpenAIEndpoint,
+            "Azure OpenAI" => AzureEndpoint,
+            "LM Studio" => LMStudioEndpoint,
+            "Ollama" => OllamaEndpoint,
+            _ => ""
+        };
+        set
+        {
+            switch (AIType)
+            {
+                case "OpenAI": OpenAIEndpoint = value; break;
+                case "Azure OpenAI": AzureEndpoint = value; break;
+                case "LM Studio": LMStudioEndpoint = value; break;
+                case "Ollama": OllamaEndpoint = value; break;
+            }
+        }
+    }
 
-			NotificationService.Notify(new NotificationMessage
-				{
-					Severity = NotificationSeverity.Success,
-					Summary = "Success",
-					Detail = "Saved",
-					Duration = 4000
-				});
+    string CurrentApiVersion
+    {
+        get => AIType == "Azure OpenAI" ? AzureApiVersion : "";
+        set { if (AIType == "Azure OpenAI") AzureApiVersion = value; }
+    }
 
-			// Notify parent that settings have changed
-			await SettingsChanged.InvokeAsync();
-		}
-		catch (Exception ex)
-		{
-			NotificationService.Notify(new NotificationMessage
-				{
-					Severity = NotificationSeverity.Error,
-					Summary = "Error",
-					Detail = ex.Message,
-					Duration = 8000
-				});
-		}
-	}
+    private async Task GetAPIKey()
+    {
+        await JSRuntime.InvokeVoidAsync("open", "https://platform.openai.com/account/api-keys");
+    }
 
-	private void ChangeAIType(dynamic paramAIType)
-	{
-		// Set the default model based on the AI Type
-		if (paramAIType == "OpenAI")
-		{
-			AIModel = DefaultAIModel;
-		}
-		else if (paramAIType == "Local")
-		{
-			AIModel = "";
-			Endpoint = "";
-		}
-	}
+    private async Task GetAzureAPIKey()
+    {
+        await JSRuntime.InvokeVoidAsync("open", "https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal");
+    }
+
+    private void APIKeyDetection(KeyboardEventArgs args)
+    {
+        IsSettingsEntered = true;
+    }
+
+    private async Task SettingsSave()
+    {
+        try
+        {
+            if (!IsAnyServiceConfigured())
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error",
+                        Detail = "Please enter valid settings for at least one AI service type.",
+                        Duration = 4000
+                    });
+                return;
+            }
+
+            // Validate the API key only if using OpenAI
+            if (AIType == "OpenAI" && !OpenAIApiKey.StartsWith("sk-"))
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error",
+                        Detail = "Invalid API Key - must start with: sk-",
+                        Duration = 4000
+                    });
+
+                return;
+            }
+
+            if ((AIType == "LM Studio" || AIType == "Ollama") &&
+                (string.IsNullOrWhiteSpace(CurrentEndpoint) || string.IsNullOrWhiteSpace(CurrentModel)))
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error",
+                        Detail = "Endpoint and Model Name are required for Local models.",
+                        Duration = 4000
+                    });
+
+                return;
+            }
+
+            // Update Settings
+            await SettingsService.SaveSettings(
+                "", // Organization (not used)
+                CurrentApiKey,
+                CurrentModel,
+                AIType,
+                CurrentEndpoint,
+                CurrentApiVersion,
+                CurrentEmbeddingModel
+            );
+
+            // Test API Key or Endpoint only if not Local
+            if (AIType != "LM Studio" && AIType != "Ollama")
+            {
+                var result = await OrchestratorMethods.TestAccess(CurrentModel);
+            }
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Success",
+                    Detail = "Saved",
+                    Duration = 4000
+                });
+
+            await SettingsChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 8000
+                });
+        }
+    }
+
+    private bool IsAnyServiceConfigured()
+    {
+        bool isLocalConfigured =
+            (AIType == "LM Studio" && !string.IsNullOrWhiteSpace(LMStudioModel) && !string.IsNullOrWhiteSpace(LMStudioEndpoint));
+
+        bool isOllamaConfigured =
+            (AIType == "Ollama" && !string.IsNullOrWhiteSpace(OllamaModel) && !string.IsNullOrWhiteSpace(OllamaEndpoint));
+
+        bool isOpenAIConfigured =
+            (AIType == "OpenAI" && !string.IsNullOrWhiteSpace(OpenAIApiKey) && OpenAIApiKey.StartsWith("sk-"));
+
+        bool isAzureConfigured =
+            (AIType == "Azure OpenAI"
+                && !string.IsNullOrWhiteSpace(AzureApiKey)
+                && !string.IsNullOrWhiteSpace(AzureModel)
+                && !string.IsNullOrWhiteSpace(AzureEndpoint)
+                && !string.IsNullOrWhiteSpace(AzureApiVersion));
+
+        return isLocalConfigured || isOllamaConfigured || isOpenAIConfigured || isAzureConfigured;
+    }
+
+    private void ChangeAIType(dynamic paramAIType)
+    {
+        AIType = paramAIType;
+        StateHasChanged();
+    }
 }

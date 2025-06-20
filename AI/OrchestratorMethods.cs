@@ -84,7 +84,7 @@ namespace AIStoryBuilders.AI
 			var requestBody = new
 			{
 				input = content,
-				model = SettingsService.AIEmbeddingModel
+				model   = SettingsService.AIEmbeddingModel
 			};
 
 			var response = await httpClient.PostAsJsonAsync(embeddingsEndpoint, requestBody);
